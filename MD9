@@ -1,0 +1,188 @@
+# install.packages("emplik")
+library(emplik)
+alpha <- 0.05
+B <- 100
+mu <- 3
+sigma <- 5
+N <- 1000
+
+n <- seq(10, 200, by = 10)
+
+bs <- function(dati){
+  rez <- replicate(B, mean(sample(dati, replace = TRUE)))
+  quantile(rez, alpha/2)
+  quantile(rez, 1 - alpha/2)
+  
+  # Pivotālie bootstrap intervāli
+  return(c(2*mean(dati) - quantile(rez, 1 - alpha/2),
+           2*mean(dati) - quantile(rez, alpha/2)))
+}
+
+t <- function(dati) t.test(dati)$conf.int[1:2]
+w <- function(dati) wilcox.test(dati, conf.int = TRUE)$conf.int[1:2]
+ci.parkl <- function(lb, ub){
+  if(lb < mu & mu < ub){
+    return(1)
+  }else{
+    return(0)
+  }
+}
+el <- function(dati, mu){
+  
+sim.fun2<-function(mu)
+{
+  n<-length(dati)
+  lam.fun<-function(lambda)
+  {
+    sum((dati - mu)/(1+lambda*(dati-mu)))
+  }
+  lam.fun<-Vectorize(lam.fun)
+  gal1<-(1-n^{-1})/(mu - max(dati))
+  gal2<-(1-n^{-1})/(mu - min(dati))
+  sakne<-uniroot(function(lam) lam.fun(lam),c(gal1,gal2), extendInt = "yes")$root
+  stat<- 2*sum(log(1+sakne*(dati-mu)))
+  stat
+}
+sim.fun2<-Vectorize(sim.fun2)
+vid<-optimize(sim.fun2, c(min(dati)+1,max(dati)-1))$minimum
+qq1<-uniroot(function(mu) sim.fun2(mu)-3.84,c(min(dati)+0.5,vid), extendInt = "yes")$root
+qq2<-uniroot(function(mu) sim.fun2(mu)-3.84,c(vid,max(dati)-0.5), extendInt = "yes")$root
+f1<-qq1
+f2<-qq2
+
+c(f1, f2)
+}
+
+
+set.seed(1)
+print("N")
+# N(3,5)
+B_N <- NULL
+T_N <- NULL
+W_N <- NULL
+E_N <- NULL
+for(i in 1 : length(n)){
+  n1 <- n[i]
+  bs_ci <- NULL
+  t_ci <- NULL
+  w_ci <- NULL
+  el_ci <- NULL
+  for(j in 1 : 100){
+  dati <- rnorm(n1, mu, sigma) 
+  b_ <- bs(dati)
+  t_ <- t(dati)
+  w_ <- w(dati)
+  el_ <- el(dati)
+  
+  bs_ci[j] <- ci.parkl(b_[1], b_[2])
+  t_ci[j] <- ci.parkl(t_[1],t_[2])
+  w_ci[j] <- ci.parkl(w_[1], w_[2])
+  el_ci[j] <- ci.parkl(el_[1], el_[2])
+  
+  }
+  B_N[i] <- mean(bs_ci)
+  T_N[i] <- mean(t_ci)
+  W_N[i] <- mean(w_ci)
+  E_N[i] <- mean(el_ci)
+  
+  print(i)
+}
+
+
+print("K")
+
+# K(3,5)
+
+B_K <- NULL
+T_K <- NULL
+W_K <- NULL
+E_K <- NULL
+for(i in 1 : length(n)){
+  n1 <- n[i]
+  bs_ci <- NULL
+  t_ci <- NULL
+  w_ci <- NULL
+  el_ci <- NULL
+  for(j in 1 : 100){
+    dati <- rcauchy(n1, mu, sigma) 
+    b_ <- bs(dati)
+    t_ <- t(dati)
+    w_ <- w(dati)
+    el_ <- el(dati)
+    
+    bs_ci[j] <- ci.parkl(b_[1], b_[2])
+    t_ci[j] <- ci.parkl(t_[1],t_[2])
+    w_ci[j] <- ci.parkl(w_[1], w_[2])
+    el_ci[j] <- ci.parkl(el_[1], el_[2])
+    
+  }
+  B_K[i] <- mean(bs_ci)
+  T_K[i] <- mean(t_ci)
+  W_K[i] <- mean(w_ci)
+  E_K[i] <- mean(el_ci)
+  
+  print(i)
+}
+
+print("L")
+# logN(3,5)
+
+B_L <- NULL
+T_L <- NULL
+W_L <- NULL
+E_L <- NULL
+for(i in 1 : length(n)){
+  n1 <- n[i]
+  bs_ci <- NULL
+  t_ci <- NULL
+  w_ci <- NULL
+  el_ci <- NULL
+  for(j in 1 : 100){
+    dati <- rlnorm(n1, mu, sigma) 
+    b_ <- bs(dati)
+    t_ <- t(dati)
+    w_ <- w(dati)
+    el_ <- el(dati)
+    
+    bs_ci[j] <- ci.parkl(b_[1], b_[2])
+    t_ci[j] <- ci.parkl(t_[1],t_[2])
+    w_ci[j] <- ci.parkl(w_[1], w_[2])
+    el_ci[j] <- ci.parkl(el_[1], el_[2])
+    
+  }
+  B_L[i] <- mean(bs_ci)
+  T_L[i] <- mean(t_ci)
+  W_L[i] <- mean(w_ci)
+  E_L[i] <- mean(el_ci)
+  
+  print(i)
+}
+
+
+# N
+plot(n, T_N, type = "l", ylim = c(0.5,1), col = "red")
+lines(n, B_N, col = "blue")
+lines(n, W_N, col = "green")
+lines(n, E_N, col = "purple")
+abline(h = 0.95, lwd = 4, lty = 5)
+legend(x = 25, y = 0.7, legend = c("t-tests", "butstraps", "Wilcoksona", "el"), 
+       col = c("red", "blue", "green", "purple"), lty = c(1,1,1,1))
+
+# K
+plot(n, T_K, type = "l", ylim = c(0.5,1), col = "red")
+lines(n, B_K, col = "blue")
+lines(n, W_K, col = "green")
+lines(n, E_K, col = "purple")
+abline(h = 0.95, lwd = 4, lty = 5)
+legend(x = 25, y = 0.7, legend = c("t-tests", "butstraps", "Wilcoksona", "el"), 
+       col = c("red", "blue", "green", "purple"), lty = c(1,1,1,1))
+
+#L
+
+plot(n, T_L, type = "l", ylim = c(0.5,1), col = "red")
+lines(n, B_L, col = "blue")
+lines(n, W_L, col = "green")
+lines(n, E_L, col = "purple")
+abline(h = 0.95, lwd = 4, lty = 5)
+legend(x = 25, y = 0.7, legend = c("t-tests", "butstraps", "Wilcoksona", "el"), 
+       col = c("red", "blue", "green", "purple"), lty = c(1,1,1,1))
