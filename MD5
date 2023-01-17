@@ -1,0 +1,26 @@
+library(tidyverse)
+library(Epi)
+library(tidyverse)
+
+dati <- as.data.frame(read.table("bpd.dat.txt"))
+names(dati) <- dati[1,]
+dati <- dati[-1,]
+
+glimpse(dati)
+
+dati <- dati %>% 
+  mutate(birthweight = as.numeric(birthweight),
+         BPD = as.numeric(BPD))
+
+fit <- glm(BPD ~ birthweight, family = "binomial", data = dati)
+
+summary(fit)
+
+rez <- as.data.frame(ci.exp(fit))
+rez %>% 
+  xtable::xtable()
+
+dati %>% 
+  ggplot(aes(x = birthweight, y = BPD))+ 
+  stat_smooth(method="glm", method.args=list(family="binomial"))
+
