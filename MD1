@@ -1,0 +1,36 @@
+# install.packages("tidyverse")
+# install.packages("openxlsx")
+# library(tidyverse)
+# install.packages("rstatix")
+library(nortest)
+library(tidyverse)
+dati0 <- openxlsx::read.xlsx("2021_visi_kopa_1.xlsx")
+
+dati0$Parbaudijums[dati0$Parbaudijums == 
+                     "Centralizētais eksāmens latviešu valodā (mazākumtautību izglītības programmās) 9. klasei"] <- "mazak"
+
+
+boxplot(dati0$Procenti ~ dati0$Parbaudijums)
+fit <- aov(dati0$Procenti ~ dati0$Parbaudijums)
+summary(fit)
+
+TukeyHSD(fit)
+plot(TukeyHSD(fit), las = 2)
+
+# pārbauda ANOVA nosacījumus
+
+lillie.test(dati0$Procenti)
+
+# H0 par normalitāti noraida
+
+
+# pielieto Kruskal-wallis
+
+fit2 <- kruskal.test(dati0$Procenti ~ dati0$Parbaudijums)
+
+ph <- pairwise.wilcox.test(dati0$Procenti, dati0$Parbaudijums,
+                     p.adjust.method = "BH")
+rez <- as.data.frame(ph$p.value)
+
+rez %>% 
+  xtable::xtable()
