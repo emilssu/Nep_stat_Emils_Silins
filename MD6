@@ -1,0 +1,70 @@
+library(KernSmooth)
+dati <- read.table("wmap.dat.txt")
+
+names(dati) <- dati[1,]
+dati <- dati[-1,]
+
+ydati <- as.numeric(dati$Cl)
+xdati <- as.numeric(dati$ell)
+n <- length(xdati)
+
+K<-function(x) dnorm(x)
+# 
+# lin.reg<-function(x,h,x.dati,y.dati){
+#   n<-length(x.dati)
+#   Sn1<-sum(K((x.dati-x)/h)*(x.dati-x))
+#   Sn2<-sum(K((x.dati-x)/h)*(x.dati-x)^2)  
+#   ff<-function(i)
+#   {
+#     K((x.dati[i]-x)/h)*(Sn2-(x.dati[i]-x)*Sn1)
+#   }
+#   ff<-Vectorize(ff)
+#   sum(ff(1:n)*y.dati)/sum(ff(1:n))  
+# }
+
+# cv.fun<-function(h_seq,X,Y){
+#   # NW-regresijai krosvalidācija
+#   #h_seq = seq(from=0.1,to=1, by=0.01)
+#   # smoothing bandwidths we are using
+# 
+#   CV_err_h = rep(NA,length(h_seq))
+#   for(j in 1:length(h_seq)){
+#     h_using = h_seq[j]
+#     CV_err = rep(NA, n)
+#     for(i in 1:n){
+#       X_val = X[i]
+#       Y_val = Y[i]
+#       # validation set
+#       X_tr = X[-i]
+#       Y_tr = Y[-i]
+#       # training set
+#       Y_val_predict = lin.reg(X_val,h_using,X_tr,Y_tr)
+#       CV_err[i] = (Y_val - Y_val_predict)^2
+#       # we measure the error in terms of difference square
+#     }
+#     CV_err_h[j] = mean(CV_err)
+#   }
+#   #plot(x=h_seq, y=CV_err_h, type="l", lwd=2, col="blue",
+#   #     xlab="Smoothing bandwidth", ylab="NW")
+#   h_seq[which(CV_err_h == min(CV_err_h))]
+# }
+# 
+# cv.fun(seq(1,50,by=1),xdati,ydati)
+
+h <- 47
+1/h
+
+# dpill(xdati, ydati)
+
+x <- seq(min(xdati), max(xdati) +20 , by = 0.1)
+
+fit <- locpoly(xdati, ydati, bandwidth = h, range.x = c(min(x), max(x) + 20), degree = 0)
+fit2 <- locpoly(xdati, ydati, bandwidth = h, range.x = c(min(x), max(x) + 20), degree = 1)
+lin <- lm(ydati ~ xdati)
+
+plot(xdati, ydati, cex = 0.5, xlim = c(0, max(x) + 20))
+lines(fit, col = "blue", lwd = 3)
+lines(fit2, col = "red", lwd = 3)
+lines(x * (-1.271)  + 3261.189, col = "green", lwd = 3)
+legend(x = 0, y = 27000, legend = c("NW", "lokālā polinomiālā", "lineārā regresija"), 
+       col = c("blue", "red", "green"), lty = c(1,1,1))
