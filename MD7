@@ -1,0 +1,111 @@
+library(KernSmooth)
+library(locfit)
+dati <- read.table("wmap.dat.txt")
+
+names(dati) <- dati[1,]
+dati <- dati[-1,]
+
+ydati <- as.numeric(dati$Cl)
+xdati <- as.numeric(dati$ell)
+n <- length(xdati)
+
+h <- dpill(xdati,ydati)
+
+# Konstanta dispersija
+sig.rice <- 1/2/(n-1)*sum((diff(ydati))^2)
+
+lin.reg<-function(x,h,x.dati,y.dati){
+  n<-length(x.dati)
+  Sn1<-sum(K((x.dati-x)/h)*(x.dati-x))
+  Sn2<-sum(K((x.dati-x)/h)*(x.dati-x)^2)  
+  ff<-function(i)
+  {
+    K((x.dati[i]-x)/h)*(Sn2-(x.dati[i]-x)*Sn1)
+  }
+  ff<-Vectorize(ff)
+  sum(ff(1:n)*y.dati)/sum(ff(1:n))  
+}
+lin.reg<-Vectorize(lin.reg, vectorize.args="x")
+
+K <- function(x) dnorm(x)
+disp<-function(x,x.dati,y.dati){
+  z.dati<-log((y.dati-lin.reg(x.dati,h,x.dati,y.dati))^2)
+  hh<-dpill(x.dati,z.dati)
+  exp(lin.reg(x,hh,x.dati,z.dati))
+}
+
+Svari <- function(x,h,x.dati,y.dati){
+  n <- length(x.dati)
+  Sn1 <- sum(K((x.dati - x)/h)*(x.dati-x))
+  Sn2 <- sum(K((x.dati - x)/h)*(x.dati-x)^2)
+  
+  ff <- function(i){
+    K((x.dati[i] - x)/h)*(Sn2-(x.dati[i]-x)*Sn1)
+  }
+  ff <- Vectorize(ff)
+  ff(1:n)/sum(ff(1:n))
+}
+
+Svari <- Vectorize(Svari, vectorize.args="x")
+
+li.final<-function(x) sqrt(sum(Svari(x,h,xdati,ydati)^2))
+li.final<-Vectorize(li.final)
+
+r <- function(x,h,x.dati,y.dati){
+  n <- length(x.dati)
+  Sn1 <- sum(K((x.dati - x)/h)*(x.dati-x))
+  Sn2 <- sum(K((x.dati - x)/h)*(x.dati-x)^2)
+  
+  ff <- function(i){
+    K((x.dati[i] - x)/h)*(Sn2-(x.dati[i]-x)*Sn1)
+  }
+  ff <- Vectorize(ff)
+  (sum(ff(1:n)* y.dati) )/sum(ff(1:n))
+}
+r <- Vectorize(r, vectorize.args="x")
+
+
+Z <- log((ydati - as.vector(r(xdati,h,xdati,ydati)))^2)
+h2 <- dpill(xdati,Z)
+
+disp2 <- exp(r(xdati,h2,xdati,Z))
+
+fit <- locfit(ydati~xdati)
+cr <- crit(fit,cov=0.99)$crit.val
+
+fit2 <- locpoly(xdati,ydati,bandwidth = h, degree=1,
+                range.x=c(min(xdati),max(xdati)))
+
+
+plot(fit2, ylim=c(0,7000),type="l")
+lines(xdati, r(xdati,h,xdati,ydati) -
+           cr*li.final(xdati)*sqrt(sig.rice),col="brown",lwd=3)
+lines(xdati, r(xdati,h,xdati,ydati) +
+           cr*li.final(xdati)*sqrt(sig.rice),col="brown",lwd=3)
+
+
+
+
+plot(fit2, ylim=c(0,7000),type="l")
+lines(xdati, r(xdati,h,xdati,ydati)-
+           cr*li.final(xdati)*sqrt(disp2),col="purple",lwd=1)
+lines(xdati, r(xdati,h,xdati,ydati)+
+        cr*li.final(xdati)*sqrt(disp2),col="purple",lwd=1)
+
+
+
+fit <- locfit(ydati ~ xdati)
+plot(fit,ylim=c(0,7000),band="global", lwd=2,col="green")
+lines(fit2,col="blue")
+loess_mod <- loess(ydati ~ xdati)
+pred <- predict(loess_mod, data=dati, se=TRUE)
+lines(pred$fit,col="red")
+legend(x = 10, y = 7000, legend = c("locfit", "loess", "locpolly"), col = c("red", "green", "blue"), lty = c(1,1,1))
+
+
+
+plot(xdati,ydati, cex = 0.5)
+lines(fit,col="red",lwd=3)
+lines(pred$fit,col="green",lwd=3)
+lines(fit2,col="blue",lwd=3)
+legend(x = 10, y = 25000, legend = c("locfit", "loess", "locpolly"), col = c("red", "green", "blue"), lty = c(1,1,1))
