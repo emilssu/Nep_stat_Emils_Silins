@@ -1,0 +1,53 @@
+library(ACSWR)
+library(histogram)
+library(tidyverse)
+data(nerve)
+dati <- nerve
+
+
+
+hist(dati, probability = T)
+cv.fun<-function(dati,h)
+{
+  n <- length(dati)
+  m <- round(1/h)
+  bin.gal<- seq(min(dati),max(dati),len=m)
+  hist.fun<-function(i)
+  {
+    length(dati[dati < bin.gal[i+1] & dati >= bin.gal[i]])
+  }
+  hist.fun<-Vectorize(hist.fun)
+  2/(h*(n-1))-(n+1)/(h*(n-1))*sum((hist.fun(1:(m))/n)^2)
+}
+
+cv.fun<-Vectorize(cv.fun,vectorize.args="h")
+
+h <- optimize(f <- function(x) cv.fun(dati,x), c(0.01,1))$minimum
+
+
+# optimālais binu platums nerve datiem
+
+hist(dati, breaks = 1/h)
+
+
+
+bw.ucv(dati)
+# histogram(dati, type = "regular", penalty = "cv")
+1/117
+# histogram(dati, type = "regular", penalty = "sc")
+1/8
+
+rez <- as.data.frame(c(h,
+                bw.ucv(dati),
+                1/117,
+                1/8))
+
+names(rez) <- "binu platums"
+
+row.names(rez) <- c("Krosvalidācija",
+                    "bw.ucv funkcija",
+                    "histogram funkcija ar penalty = cv",
+                    "histogram funkcija ar penalty = sc")
+
+rez %>% 
+  xtable::xtable()
