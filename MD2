@@ -1,0 +1,58 @@
+set.seed(1)
+# install.packages("xtable")
+n1 <- 100
+n2 <- 10
+n3 <- 20
+n4 <- 50
+n5 <- 200
+alpha <-0.05
+
+e1 <-sqrt(1/(2*n1)*log(2/alpha))
+e2 <-sqrt(1/(2*n2)*log(2/alpha))
+e3 <-sqrt(1/(2*n3)*log(2/alpha))
+e4 <-sqrt(1/(2*n4)*log(2/alpha))
+e5 <-sqrt(1/(2*n5)*log(2/alpha))
+
+f <- function(n, e){
+  # n <- n1
+  # e <- e1
+ dati <- rnorm(n,0,1)
+ a <- -1
+ fn <- ecdf(dati)
+ g1 <- fn(sort(dati)) - e - pnorm(sort(dati))
+ g2 <- fn(sort(dati)) + e - pnorm(sort(dati))
+ c <- g1 * g2
+  
+    for (i in 1:n)
+           {
+             if(c[i]>0) {
+                 a <- 1
+               }
+              
+               }
+         a
+}
+
+N<-1000
+
+ff<-function(n, e)
+   {
+       rez<-replicate(N,f(n, e))
+       length(rez[rez<0])/N
+     }
+
+rez <- as.data.frame(c(ff(n1, e1), 
+  ff(n2, e2), 
+  ff(n3, e3),
+  ff(n4, e4),
+  ff(n5, e5)))
+
+names(rez) <- "Pārklājuma precizitāte"
+row.names(rez) <- c("n = 100",
+                    "n = 10",
+                    "n = 20",
+                    "n = 50",
+                    "n = 200")
+
+rez %>% 
+  xtable::xtable()
