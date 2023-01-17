@@ -1,0 +1,23 @@
+library(astsa)
+library(KernSmooth)
+library(tidyverse)
+library(locfit)
+
+dati <- sunspots
+
+ts.plot(dati)
+pgram <- mvspec(dati, log = "no")
+
+xdati <- pgram$freq[pgram$freq < 0.5]
+ydati <- pgram$spec[pgram$freq < 0.5]
+
+
+h <- dpill(xdati, ydati)
+plot(xdati, ydati, type="l")
+
+fit <- locpoly(xdati, ydati, bandwidth = h, degree=1)
+lines(fit, lty = 5, col = "red")
+
+
+fit2 <- locfit(ydati ~ xdati, alpha = 0.05)
+plot(fit2, band="global",lwd=2, col="red", xlim = c(0, 0.5))
